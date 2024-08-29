@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create EC2 instances for pet app.
+
+Parameters:
+  PublicInstanceType:
+    Type: String
+    Description: The instance type for the public instance
+    Default: t3.micro
+  PrivateInstanceType:
+    Type: String
+    Description: The instance type for the private instance
+    Default: t3.micro
+  PublicImageId:
+    Type: String
+    Description: The AMI ID for the public instance
+    Default: ami-0c13b2d84424f9d8d
+  PrivateImageId:
+    Type: String
+    Description: The AMI ID for the private instance
+    Default: ami-0c13b2d84424f9d8d
+  PublicKeyPairName:
+    Type: String
+    Description: The key pair name for the public instance
+    Default: pet-public-server
+  PrivateKeyPairName:
+    Type: String
+    Description: The key pair name for the private instance
+    Default: pet-private-server
+
+Resources:
+  PublicInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref PublicImageId
+      InstanceType: !Ref PublicInstanceType
+      KeyName: !Ref PublicKeyPairName
+      SubnetId: !ImportValue PetPublicSubnet
+      SecurityGroupIds: [!ImportValue PetPublicSecurityGroup]
+  PrivateInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref PrivateImageId
+      InstanceType: !Ref PrivateInstanceType
+      KeyName: !Ref PrivateKeyPairName
+      SubnetId: !ImportValue PetPrivateSubnet
+      SecurityGroupIds: [!ImportValue PetPrivateSecurityGroup]
+

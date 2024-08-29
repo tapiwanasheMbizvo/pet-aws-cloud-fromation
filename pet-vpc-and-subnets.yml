@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Creates a VPC with subnets.
+
+Parameters:
+  VpcCidrBlock:
+    Type: String
+    Description: The CIDR block for the VPC
+    Default: 197.0.0.0/16
+  PublicSubnetCidrBlock:
+    Type: String
+    Description: The CIDR block for the public subnet
+    Default: 197.0.0.0/18
+  PrivateSubnetCidrBlock:
+    Type: String
+    Description: The CIDR block for the private subnet
+    Default: 197.0.64.0/18
+  AvailabilityZone:
+    Type: String
+    Description: The availability zone for the resources
+
+Resources:
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidrBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: name
+          Value: PET-APP-VPC
+        - Key: env
+          Value: learning
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: !Ref PublicSubnetCidrBlock
+      AvailabilityZone: !Ref AvailabilityZone
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: !Ref PrivateSubnetCidrBlock
+      AvailabilityZone: !Ref AvailabilityZone
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: PublicSecurityGroup
+      GroupDescription: Security group for the public subnets
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: PrivateSecurityGroup
+      GroupDescription: Security group for the private subnet
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+
+
+Outputs:
+  PrivateSecurityGroupID:
+    Description:  Private Security Group ID
+    Value: !GetAtt PrivateSecurityGroup.GroupId
+    Export:
+      Name: PetPrivateSecurityGroup
+  PrivateSubnetId:
+    Description: Private subnet id 
+    Value:  !GetAtt PrivateSubnet.SubnetId
+    Export:
+      Name: PetPrivateSubnet
+  PublicSecurityGroupID:
+    Description:  Public Security Group ID
+    Value: !GetAtt PublicSecurityGroup.GroupId
+    Export:
+      Name: PetPublicSecurityGroup
+  PublicSubnetId:
+    Description: Public subnet id 
+    Value:  !GetAtt PublicSubnet.SubnetId
+    Export:
+      Name: PetPublicSubnet
