@@ -28,6 +28,7 @@ Parameters:
     Default: pet-private-server
 
 Resources:
+
   PublicInstance:
     Type: AWS::EC2::Instance
     Properties:
@@ -36,6 +37,7 @@ Resources:
       KeyName: !Ref PublicKeyPairName
       SubnetId: !ImportValue PetPublicSubnet
       SecurityGroupIds: [!ImportValue PetPublicSecurityGroup]
+
   PrivateInstance:
     Type: AWS::EC2::Instance
     Properties:
@@ -44,4 +46,11 @@ Resources:
       KeyName: !Ref PrivateKeyPairName
       SubnetId: !ImportValue PetPrivateSubnet
       SecurityGroupIds: [!ImportValue PetPrivateSecurityGroup]
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !ImportValue NatEIP
+      SubnetId: !ImportValue PetPublicSubnet
+
 

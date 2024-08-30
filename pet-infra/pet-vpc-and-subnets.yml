@@ -38,6 +38,8 @@ Resources:
       VpcId: !Ref MyVPC
       CidrBlock: !Ref PublicSubnetCidrBlock
       AvailabilityZone: !Ref AvailabilityZone
+      MapPublicIpOnLaunch: true
+      
 
   PrivateSubnet:
     Type: AWS::EC2::Subnet
@@ -48,7 +50,12 @@ Resources:
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
-
+  
+  NatEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain : vpc
+    
   VPCGatewayAttachment:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
@@ -56,13 +63,11 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
 
   PublicRouteTable:
-    routeTableName: PetPublicRouteTable
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref MyVPC
 
   PrivateRouteTable:
-    routeTableName: PetPrivateRouteTable
       Type: AWS::EC2::RouteTable
       Properties:
         VpcId: !Ref MyVPC
@@ -82,6 +87,12 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet
       RouteTableId: !Ref PublicRouteTable
+
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !GetAtt PrivateSubnet.SubnetId
+      RouteTableId: !Ref PrivateRouteTable
 
   PublicSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -130,3 +141,15 @@ Outputs:
     Value:  !GetAtt PublicSubnet.SubnetId
     Export:
       Name: PetPublicSubnet
+
+  PrivateRouteTableID:
+    Description: Public subnet id 
+    Value:  !GetAtt PrivateRouteTable.RouteTableId
+    Export:
+      Name: PrivateRouteTableID  
+
+  NatEIP:
+    Description: NAT Elastic IP  
+    Value:  !GetAtt 'NatEIP.AllocationId'
+    Export:
+      Name: NatEIP
