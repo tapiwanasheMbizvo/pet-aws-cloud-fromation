@@ -121,6 +121,7 @@ Resources:
       LaunchTemplateData:
         ImageId: ami-0c13b2d84424f9d8d
         InstanceType:  t3.micro
+        UserData: IyEvYmluL2Jhc2gKc3VkbyBhcHQgdXBkYXRlCnN1ZG8gYXB0IGluc3RhbGwgb3Blbmpkay0xNy1qcmUtaGVhZGxlc3MgLXkKc3VkbyBhcHQgaW5zdGFsbCBtYXZlbiAteQpzdWRvIGFwdCB1cGRhdGUKZ2l0IGNsb25lIGh0dHBzOi8vZ2hwX0RaODVQWEphcURaTjd6cUdWbjluSGhrVWs3a2p3RzIydHI4N0BnaXRodWIuY29tL3RhcGl3YW5hc2hlTWJpenZvL3BldC1jb25zdW1lci5naXQKY2QgcGV0LWNvbnN1bWVyCm12biBzcHJpbmctYm9vdDpydW4=
         KeyName: pet-private-server
         NetworkInterfaces:
           - DeviceIndex : 0
@@ -184,8 +185,8 @@ Resources:
     Properties:
       VpcId: !ImportValue  PetVPCID
       TargetType: instance
-      HealthCheckPath: /index.html
-      Port: 80
+      HealthCheckPath: /actuator/health
+      Port: 8789
       Protocol: HTTP
       Tags:
         - Key: Name
@@ -210,7 +211,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
       Protocol: HTTP
-      Port: 8785
+      Port: 8789
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref ALBTargetGroups
