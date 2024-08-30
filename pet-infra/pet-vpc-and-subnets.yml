@@ -74,8 +74,8 @@ Resources:
       VpcId: !Ref MyVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
+          FromPort: 8789
+          ToPort: 8789
           CidrIp: 0.0.0.0/0
 
   PrivateSecurityGroup:
@@ -86,8 +86,8 @@ Resources:
       VpcId: !Ref MyVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
+          FromPort: 8789
+          ToPort: 8789
           CidrIp: 0.0.0.0/0
 
 
