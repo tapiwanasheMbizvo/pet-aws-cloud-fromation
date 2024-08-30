@@ -1,0 +1,217 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation template to create VPC, Subnets, RouteTables, Routes , Security Groups , and other network related stuff for the pet app 3 tier.
+
+Parameters:
+  PublicSubnetCidrBlock1A:
+    Type: String
+    Description: The CIDR block for the public subnet in az af-south-1a
+    Default: 10.0.16.0/20
+  PrivateSubnetCidrBlock1A:
+    Type: String
+    Description: The CIDR block for the private subnet in az af-south-1a
+    Default: 10.0.32.0/20
+
+  PublicSubnetCidrBlock1B:
+    Type: String
+    Description: The CIDR block for the public subnet in az af-south-1b
+    Default: 10.0.48.0/20
+  PrivateSubnetCidrBlock1B:
+    Type: String
+    Description: The CIDR block for the private subnet in az af-south-1b
+    Default: 10.0.64.0/20
+
+  PublicSubnetCidrBlock1C:
+    Type: String
+    Description: The CIDR block for the public subnet in az af-south-1c
+    Default: 10.0.80.0/20
+  PrivateSubnetCidrBlock1C:
+    Type: String
+    Description: The CIDR block for the private subnet in az af-south-1c
+    Default: 10.0.96.0/20
+
+
+Resources:
+  PublicSubnet1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue  PetVPCID
+      CidrBlock: !Ref PublicSubnetCidrBlock1A
+      AvailabilityZone: af-south-1a
+      MapPublicIpOnLaunch: true
+
+  PrivateSubnet1A:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue  PetVPCID
+      CidrBlock: !Ref PrivateSubnetCidrBlock1A
+      AvailabilityZone: af-south-1a
+
+  PublicSubnet1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue  PetVPCID
+      CidrBlock: !Ref PublicSubnetCidrBlock1B
+      AvailabilityZone: af-south-1b
+      MapPublicIpOnLaunch: true
+
+  PrivateSubnet1B:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue  PetVPCID
+      CidrBlock: !Ref PrivateSubnetCidrBlock1B
+      AvailabilityZone: af-south-1b
+
+  PublicSubnet1C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue  PetVPCID
+      CidrBlock: !Ref PublicSubnetCidrBlock1C
+      AvailabilityZone: af-south-1c
+      MapPublicIpOnLaunch: true
+
+  PrivateSubnet1C:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !ImportValue  PetVPCID
+      CidrBlock: !Ref PrivateSubnetCidrBlock1C
+      AvailabilityZone: af-south-1c
+
+
+  PublicSubnet1ARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1A
+      RouteTableId: !ImportValue PublicRouteTableID
+
+  PrivateSubnet1ARouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1A
+      RouteTableId: !ImportValue PrivateRouteTableID
+
+  PublicSubnet1BRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1B
+      RouteTableId: !ImportValue PublicRouteTableID
+
+  PrivateSubnet1BRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1B
+      RouteTableId: !ImportValue PrivateRouteTableID
+
+  PublicSubnet1CRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1C
+      RouteTableId: !ImportValue PublicRouteTableID
+
+  PrivateSubnet1CRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1C
+      RouteTableId: !ImportValue PrivateRouteTableID
+
+  PetEC2LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    DeletionPolicy: Delete
+    Properties:
+      LaunchTemplateName: PetEC2LaunchTemplate
+      LaunchTemplateData:
+        ImageId: ami-0c13b2d84424f9d8d
+        InstanceType:  t3.micro
+        KeyName: pet-private-server
+        NetworkInterfaces:
+          - DeviceIndex : 0
+            AssociatePublicIpAddress: true
+            Groups: [!ImportValue PetPublicSecurityGroup]
+
+  PetAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    DeletionPolicy: Delete
+    Properties:
+      MinSize : 2
+      MaxSize: 5
+      DesiredCapacity: 3
+      LaunchTemplate:
+        LaunchTemplateId: !Ref PetEC2LaunchTemplate
+        Version: !GetAtt PetEC2LaunchTemplate.LatestVersionNumber
+      HealthCheckType: ELB
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet1A
+        - !Ref PublicSubnet1B
+        - !Ref PublicSubnet1C
+      TargetGroupARNs: [!Ref ALBTargetGroups]
+
+  cpuUsage:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref PetAutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: 50
+
+  PetScalingPolicy:
+    Type: 'AWS::AutoScaling::ScalingPolicy'
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref PetAutoScalingGroup
+      ScalingAdjustment: '1'
+      
+  CloudWatchAlarm:
+    Type: 'AWS::CloudWatch::Alarm'
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '50'
+      AlarmDescription: Alarm if CPU higher than 50%
+      Period: '60'
+      AlarmActions:
+        - !Ref PetScalingPolicy
+      Namespace: AWS/EC2
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value:
+            Ref: PetAutoScalingGroup
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: CPUUtilization
+
+  ALBTargetGroups:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      VpcId: !ImportValue  PetVPCID
+      TargetType: instance
+      HealthCheckPath: /index.html
+      Port: 80
+      Protocol: HTTP
+      Tags:
+        - Key: Name
+          Value: PetCloudFormationTG
+
+
+  PetALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
+      Scheme: internet-facing
+      SecurityGroups: [!ImportValue PetPublicSecurityGroup]
+      Subnets: 
+      - !Ref PublicSubnet1C
+      - !Ref PublicSubnet1B
+      - !Ref PublicSubnet1A
+      Tags:
+        - Key: Name
+          Value: PetCloudFormationALB
+
+  PetALBlistener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      Protocol: HTTP
+      Port: 8785
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroups
+      LoadBalancerArn: !Ref PetALB

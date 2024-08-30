@@ -29,6 +29,27 @@ Parameters:
 
 Resources:
 
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !ImportValue NatEIP
+      SubnetId: !ImportValue PetPublicSubnet
+
+  InternetBoundRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !ImportValue PrivateRouteTableID
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref NatGateway
+
+
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !ImportValue PetPrivateSubnet
+      RouteTableId: !ImportValue PrivateRouteTableID
+
+      
   PublicInstance:
     Type: AWS::EC2::Instance
     Properties:
@@ -47,10 +68,5 @@ Resources:
       SubnetId: !ImportValue PetPrivateSubnet
       SecurityGroupIds: [!ImportValue PetPrivateSecurityGroup]
 
-  NatGateway:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !ImportValue NatEIP
-      SubnetId: !ImportValue PetPublicSubnet
 
 
