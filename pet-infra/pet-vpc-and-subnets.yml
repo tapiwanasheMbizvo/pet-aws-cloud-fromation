@@ -56,9 +56,19 @@ Resources:
       InternetGatewayId: !Ref InternetGateway
 
   PublicRouteTable:
+    routeTableName: PetPublicRouteTable
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref MyVPC
+
+  PrivateRouteTable:
+    routeTableName: PetPrivateRouteTable
+      Type: AWS::EC2::RouteTable
+      Properties:
+        VpcId: !Ref MyVPC
+        Tags:
+          - Key: name
+            Value: pet-public-route-table
 
   PublicRoute:
     Type: AWS::EC2::Route
